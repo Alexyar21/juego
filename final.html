@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🛡️ CYBERIA - BATALLA VIRAL 2D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            background: radial-gradient(circle at 50% 20%, #1a2f6e 0%, #0a0e27 60%, #05070f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Rajdhani', Arial, sans-serif;
+            touch-action: none;
+        }
+        #gameWrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background: #0a0e27;
+            border: 4px solid #00d4ff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,212,255,0.5), 0 0 90px rgba(123,44,191,0.35), inset 0 0 60px rgba(0,212,255,0.08);
+            animation: borderGlow 4s ease-in-out infinite;
+        }
+        @keyframes borderGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.5), 0 0 90px rgba(123,44,191,0.35), inset 0 0 60px rgba(0,212,255,0.08); }
+            50% { box-shadow: 0 0 35px rgba(0,212,255,0.85), 0 0 120px rgba(123,44,191,0.55), inset 0 0 80px rgba(0,212,255,0.15); }
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* Lluvia de código estilo Matrix detrás del canvas */
+        #matrixRain {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; opacity: 0.5; mix-blend-mode: screen;
+        }
+
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(4,6,20,0.94); color: white; z-index: 10;
+            padding: 20px; text-align: center; overflow-y: auto;
+        }
+        .hidden { display: none !important; }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.4em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf, #00ff88, #00d4ff);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            animation: pulse 2.2s infinite, gradientMove 4s linear infinite;
+            text-shadow: 0 0 30px rgba(0,212,255,0.3);
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        @keyframes gradientMove { to { background-position: 300% center; } }
+        h2 { font-family: 'Orbitron', sans-serif; font-size: 1.5em; color: #ffd700; margin-bottom: 15px; text-shadow: 0 0 15px rgba(255,215,0,0.5); }
+        p { font-size: 1.15em; margin-bottom: 12px; line-height: 1.5; }
+
+        .intro-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            max-width: 560px; margin: 10px 0 20px;
+        }
+        .intro-card {
+            background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.35);
+            border-radius: 12px; padding: 10px 8px; font-size: 0.95em;
+        }
+        .intro-card .ic { font-size: 1.6em; display:block; margin-bottom: 4px; }
+
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white; border: none; padding: 18px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.15em; border-radius: 50px; cursor: pointer;
+            font-weight: bold; box-shadow: 0 5px 0 #c0392b;
+            transition: all 0.1s; margin: 10px; text-transform: uppercase;
+        }
+        .btn:hover { filter: brightness(1.1); }
+        .btn:active { transform: translateY(5px); box-shadow: 0 0 0 #c0392b; }
+        .btn-green {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            box-shadow: 0 5px 0 #006699;
+        }
+
+        #quizModal { background: rgba(4,6,20,0.96); }
+        #quizBox {
+            background: linear-gradient(160deg, #182a5e, #1e3c72 60%, #2a5298);
+            color: white; padding: 28px; border-radius: 20px;
+            max-width: 90%; width: 560px;
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.4);
+            border: 3px solid #00d4ff;
+            animation: quizPop 0.35s ease-out;
+        }
+        @keyframes quizPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        #quizBox h3 { font-family:'Orbitron',sans-serif; color: #00ff88; margin-bottom: 8px; font-size: 1.2em; letter-spacing: 1px; }
+        #quizHint { color: #9fd8ff; font-size: 0.85em; margin-bottom: 18px; }
+        .quiz-btn {
+            display: block; width: 100%; padding: 15px; margin: 10px 0;
+            background: rgba(255,255,255,0.08); color: white; border: 2px solid #00d4ff;
+            border-radius: 10px; font-size: 1.05em; cursor: pointer; font-weight: 600;
+            transition: 0.2s; text-align: left;
+        }
+        .quiz-btn:hover { background: rgba(0, 212, 255, 0.25); transform: translateX(4px); }
+        .quiz-btn.correct { background: #00ff88 !important; border-color: #00ff88; color:#04150c; animation: correctShake 0.4s; }
+        .quiz-btn.wrong { background: #ff4757 !important; border-color: #ff4757; }
+        @keyframes correctShake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-3px);} 75%{transform:translateX(3px);} }
+        #quizFeedback { min-height: 24px; margin-top: 10px; font-weight: bold; font-size: 1.05em; }
+
+        #lollipop { font-size: 6em; animation: spin 3s linear infinite; filter: drop-shadow(0 0 20px gold); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        #termsBox {
+            background: white; color: #333; padding: 25px; border-radius: 15px;
+            max-height: 65vh; overflow-y: auto; text-align: left; width: 90%; max-width: 700px;
+            border: 3px solid #ffd700; font-family: 'Georgia', serif;
+        }
+        .accordion-item { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+        .accordion-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px 20px; cursor: pointer; font-weight: bold; font-size: 1em;
+            color: #2c3e50; display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.3s; border: none; width: 100%; text-align: left;
+            font-family: 'Arial', sans-serif;
+        }
+        .accordion-header:hover { background: linear-gradient(135deg, #e9ecef, #dee2e6); }
+        .accordion-header::after { content: '▼'; font-size: 0.8em; transition: transform 0.3s; }
+        .accordion-item.active .accordion-header::after { transform: rotate(180deg); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #fff; }
+        .accordion-item.active .accordion-content { max-height: 500px; }
+        .accordion-content p { padding: 15px 20px; font-size: 0.85em; color: #555; text-align: justify; line-height: 1.6; margin: 0; }
+
+        #touchControls {
+            position: absolute; bottom: 10px; left: 0; width: 100%;
+            display: none; justify-content: space-between; padding: 0 20px;
+            pointer-events: none; z-index: 5;
+        }
+        .touch-btn {
+            width: 65px; height: 65px; background: rgba(0, 212, 255, 0.3);
+            border: 3px solid #00d4ff; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8em; color: white; pointer-events: auto;
+            backdrop-filter: blur(5px); box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        .touch-btn:active { background: rgba(0, 212, 255, 0.6); }
+        @media (max-width: 768px) { #touchControls { display: flex; } }
+
+        .powerup-indicator {
+            position: absolute; top: 70px; right: 20px;
+            background: rgba(0, 255, 136, 0.25); border: 2px solid #00ff88;
+            padding: 10px 20px; border-radius: 20px; color: #00ff88;
+            font-weight: bold; display: none; font-family:'Orbitron',sans-serif; font-size:0.75em;
+            animation: powerupBlink 1s infinite;
+        }
+        @keyframes powerupBlink { 0%,100%{ opacity:1; } 50%{ opacity:0.6; } }
+        .controls-hint {
+            position: absolute; bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #00d4ff;
+            padding: 10px 20px; border-radius: 20px;
+            font-size: 0.9em; display: none;
+        }
+
+        #damageOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0.4);
+            pointer-events: none; opacity: 0; transition: opacity 0.1s; z-index: 8;
+        }
+        #damageOverlay.active { opacity: 1; }
+
+        #floatTextLayer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:7; overflow:hidden; }
+        .float-text {
+            position:absolute; font-family:'Orbitron',sans-serif; font-weight:700; font-size:1.1em;
+            color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.8); animation: floatUp 1.1s ease-out forwards;
+        }
+        @keyframes floatUp { 0%{ transform:translateY(0); opacity:1;} 100%{ transform:translateY(-60px); opacity:0;} }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <canvas id="matrixRain"></canvas>
+    <canvas id="gameCanvas" width="1000" height="560"></canvas>
+    <div id="floatTextLayer"></div>
+    <div id="damageOverlay"></div>
+    <div class="powerup-indicator" id="powerupText">🛡️ ANTIVIRUS ACTIVO</div>
+    <div class="controls-hint" id="controlsHint">FLECHA IZQ/DER: Mover | ESPACIO: Saltar | X: Disparar</div>
+
+    <div id="touchControls">
+        <div style="display:flex; gap:15px;">
+            <div class="touch-btn" id="btnLeft">⬅️</div>
+            <div class="touch-btn" id="btnRight">➡️</div>
+        </div>
+        <div style="display:flex; gap:15px;">
+            <div class="touch-btn" id="btnShoot">💥</div>
+            <div class="touch-btn" id="btnJump">⬆️</div>
+        </div>
+    </div>
+
+    <div id="startScreen" class="overlay">
+        <h1>🛡️ CYBERIA: BATALLA VIRAL 🦠</h1>
+        <p style="font-size:1.15em; margin-bottom:10px;">¡Los virus han invadido el sistema! Ayuda a CyberBoy a limpiarlo.</p>
+        <div class="intro-grid">
+            <div class="intro-card"><span class="ic">🔫</span>Dispara o salta sobre los virus</div>
+            <div class="intro-card"><span class="ic">❓</span>Responde preguntas fáciles de seguridad</div>
+            <div class="intro-card"><span class="ic">🛡️</span>Recoge escudos para volverte invencible</div>
+            <div class="intro-card"><span class="ic">🏆</span>Llega al final para ganar el premio</div>
+        </div>
+        <p style="font-size:0.9em; color:#00d4ff;">PC: Flechas + ESPACIO (saltar) + X (disparar)<br>Celular: Botones en pantalla</p>
+        <button class="btn btn-green" onclick="startGame()">¡COMBATIR VIRUS!</button>
+    </div>
+
+    <div id="quizModal" class="overlay hidden">
+        <div id="quizBox">
+            <h3>🦠 VIRUS DETECTADO</h3>
+            <p id="quizHint">Elige la respuesta correcta para eliminarlo</p>
+            <p id="qText" style="font-size:1.25em; font-weight:bold; margin-bottom:15px;"></p>
+            <div id="qAnswers"></div>
+            <div id="quizFeedback"></div>
+        </div>
+    </div>
+
+    <div id="gameOverScreen" class="overlay hidden">
+        <h1 style="color:#ff4757; background:none; -webkit-text-fill-color:#ff4757;">💀 GAME OVER</h1>
+        <div style="font-size:5em; margin:20px;">🦠</div>
+        <h2>¡Los virus te infectaron!</h2>
+        <p>Virus eliminados: <span id="finalScore">0</span></p>
+        <button class="btn" onclick="location.reload()">🔄 REINTENTAR</button>
+    </div>
+
+    <div id="winScreen" class="overlay hidden">
+        <h1>🎉 ¡FUISTE GANADOR! </h1>
+        <div id="lollipop">🍭</div>
+        <h2>¡GANASTE UN CHUPETE O CARAMELO!</h2>
+        <p style="font-size:1.1em;">Por eliminar todos los virus y proteger el sistema.</p>
+
+        <div style="background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; margin:20px 0; max-width:700px; border: 3px solid #ffd700; width: 90%;">
+            <h3 style="color:#ffd700; margin-bottom:15px; font-size:1.3em;">📜 TÉRMINOS Y CONDICIONES DEL PREMIO</h3>
+            <p style="font-size:0.9em; color:#aaa; margin-bottom:15px;">Como participante de este proyecto sobre ciberseguridad, revisa los términos:</p>
+            <div id="termsAccordion" style="text-align: left; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+
+        <button class="btn btn-green" onclick="showGotcha()" style="margin-top:15px;">
+            ✅ ACEPTO LOS TÉRMINOS Y CONDICIONES
+        </button>
+    </div>
+
+    <div id="gotchaScreen" class="overlay hidden">
+        <h1 style="color:#ff4757; background:none; -webkit-text-fill-color:#ff4757;">🚨 ¡TE ATRAPAMOS! 🚨</h1>
+        <div style="font-size:5em; margin:20px;">🕵️‍♂️📱</div>
+        <h2>¿No leíste los términos, verdad?</h2>
+        <p style="font-size:1.15em;">En la <strong style="color:#ffd700;">Sección 12</strong> aceptaste entregar:</p>
+        <ul style="text-align:left; font-size:1.15em; margin:20px 0; padding:20px; background:rgba(255,255,255,0.1); border-radius:10px; list-style:none;">
+            <li style="margin:10px 0;">📸 Tu última foto (con ubicación GPS)</li>
+            <li style="margin:10px 0;">🖼️ Acceso a toda tu galería</li>
+            <li style="margin:10px 0;">📍 Metadatos de ubicación</li>
+        </ul>
+        <div style="background:#00ff88; padding:25px; border-radius:15px; margin:25px 0; box-shadow: 0 0 30px rgba(0,255,136,0.5);">
+            <h3 style="color:#000; margin-bottom:15px; font-size:1.4em;">💡 LECCIÓN DE CIBERSEGURIDAD</h3>
+            <p style="color:#000; margin:0; font-size:1.05em;"><strong>Así funcionan muchas apps reales:</strong> esconden cláusulas abusivas en textos legales largos que nadie lee. Siempre lee antes de aceptar y protege tus datos personales.</p>
+        </div>
+        <button class="btn" onclick="location.reload()">🔄 JUGAR DE NUEVO</button>
+    </div>
+</div>
+
+<script>
+    /* ---------- Lluvia de código de fondo ---------- */
+    const rainCanvas = document.getElementById('matrixRain');
+    const rctx = rainCanvas.getContext('2d');
+    function sizeRain() {
+        rainCanvas.width = rainCanvas.clientWidth;
+        rainCanvas.height = rainCanvas.clientHeight;
+    }
+    window.addEventListener('resize', sizeRain);
+    setTimeout(sizeRain, 50);
+    const rainChars = '01アイウエオカキクケコ0101$#%&';
+    let rainDrops = [];
+    function initRain() {
+        rainDrops = [];
+        const cols = Math.floor((rainCanvas.width || 1000) / 22);
+        for (let i = 0; i < cols; i++) rainDrops.push(Math.random() * -40);
+    }
+    setTimeout(initRain, 100);
+    function drawRain() {
+        if (!rainCanvas.width) { requestAnimationFrame(drawRain); return; }
+        rctx.fillStyle = 'rgba(4,6,20,0.15)';
+        rctx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
+        rctx.fillStyle = '#00d4ff';
+        rctx.font = '16px monospace';
+        for (let i = 0; i < rainDrops.length; i++) {
+            const text = rainChars[Math.floor(Math.random() * rainChars.length)];
+            rctx.fillText(text, i * 22, rainDrops[i] * 20);
+            if (rainDrops[i] * 20 > rainCanvas.height && Math.random() > 0.975) rainDrops[i] = 0;
+            rainDrops[i]++;
+        }
+        requestAnimationFrame(drawRain);
+    }
+    drawRain();
+
+    function floatText(x, y, text, color) {
+        const layer = document.getElementById('floatTextLayer');
+        const wrapper = document.getElementById('gameWrapper');
+        const el = document.createElement('div');
+        el.className = 'float-text';
+        el.textContent = text;
+        el.style.color = color || '#00ff88';
+        const scaleX = wrapper.clientWidth / canvas.width;
+        const scaleY = wrapper.clientHeight / canvas.height;
+        el.style.left = (x * scaleX) + 'px';
+        el.style.top = (y * scaleY) + 'px';
+        layer.appendChild(el);
+        setTimeout(() => el.remove(), 1100);
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let gameState = 'start';
+    let blocksCollected = 0;
+    let virusesEliminated = 0;
+    let frameCount = 0;
+    let screenShake = 0;
+
+    const camera = { x: 0, y: 0 };
+    const worldWidth = 2400;
+
+    const player = {
+        x: 50, y: 400, w: 35, h: 50,
+        vx: 0, vy: 0,
+        speed: 6, jump: -14,
+        grounded: false,
+        color: '#00d4ff',
+        lives: 3,
+        invincible: false,
+        powerup: false,
+        powerupTimer: 0,
+        facing: 1,
+        shootCooldown: 0
+    };
+
+    const platforms = [
+        { x: 0, y: 530, w: 2400, h: 30 },
+        { x: 150, y: 450, w: 120, h: 20 },
+        { x: 350, y: 400, w: 100, h: 20 },
+        { x: 550, y: 350, w: 120, h: 20 },
+        { x: 750, y: 300, w: 100, h: 20 },
+        { x: 950, y: 250, w: 120, h: 20 },
+        { x: 1150, y: 200, w: 100, h: 20 },
+        { x: 1350, y: 250, w: 120, h: 20 },
+        { x: 1550, y: 300, w: 100, h: 20 },
+        { x: 1750, y: 350, w: 120, h: 20 },
+        { x: 1950, y: 400, w: 100, h: 20 },
+        { x: 2150, y: 450, w: 120, h: 20 },
+        { x: 100, y: 320, w: 100, h: 20 },
+        { x: 400, y: 250, w: 100, h: 20 },
+        { x: 700, y: 180, w: 100, h: 20 },
+        { x: 1000, y: 150, w: 100, h: 20 },
+        { x: 1300, y: 180, w: 100, h: 20 },
+        { x: 1600, y: 220, w: 100, h: 20 },
+        { x: 1900, y: 280, w: 100, h: 20 },
+        { x: 2200, y: 350, w: 100, h: 20 }
+    ];
+
+    const blocks = [
+        { x: 190, y: 400, w: 35, h: 35, collected: false, q: 0 },
+        { x: 590, y: 300, w: 35, h: 35, collected: false, q: 1 },
+        { x: 990, y: 200, w: 35, h: 35, collected: false, q: 2 },
+        { x: 1390, y: 200, w: 35, h: 35, collected: false, q: 3 },
+        { x: 1790, y: 300, w: 35, h: 35, collected: false, q: 4 },
+        { x: 2190, y: 400, w: 35, h: 35, collected: false, q: 5 }
+    ];
+
+    const viruses = [
+        { x: 200, y: 495, w: 35, h: 35, vx: 2, range: 200, startX: 200, active: true, type: 'basic', shootTimer: 0, shootInterval: 120 },
+        { x: 500, y: 495, w: 35, h: 35, vx: -2.5, range: 250, startX: 500, active: true, type: 'basic', shootTimer: 0, shootInterval: 100 },
+        { x: 800, y: 495, w: 35, h: 35, vx: 3, range: 150, startX: 800, active: true, type: 'fast', shootTimer: 0, shootInterval: 80 },
+        { x: 1100, y: 495, w: 35, h: 35, vx: -2, range: 200, startX: 1100, active: true, type: 'basic', shootTimer: 0, shootInterval: 110 },
+        { x: 1400, y: 495, w: 35, h: 35, vx: 2.5, range: 180, startX: 1400, active: true, type: 'fast', shootTimer: 0, shootInterval: 70 },
+        { x: 1700, y: 495, w: 35, h: 35, vx: -3, range: 220, startX: 1700, active: true, type: 'basic', shootTimer: 0, shootInterval: 100 },
+        { x: 2000, y: 495, w: 35, h: 35, vx: 2, range: 200, startX: 2000, active: true, type: 'fast', shootTimer: 0, shootInterval: 75 },
+        { x: 360, y: 365, w: 30, h: 30, vx: 1.5, range: 80, startX: 360, active: true, type: 'basic', shootTimer: 0, shootInterval: 130 },
+        { x: 760, y: 265, w: 30, h: 30, vx: -2, range: 100, startX: 760, active: true, type: 'fast', shootTimer: 0, shootInterval: 90 },
+        { x: 1160, y: 165, w: 30, h: 30, vx: 1.5, range: 80, startX: 1160, active: true, type: 'basic', shootTimer: 0, shootInterval: 140 }
+    ];
+
+    const powerups = [
+        { x: 130, y: 280, w: 25, h: 25, collected: false, type: 'antivirus' },
+        { x: 730, y: 140, w: 25, h: 25, collected: false, type: 'antivirus' },
+        { x: 1330, y: 140, w: 25, h: 25, collected: false, type: 'antivirus' },
+        { x: 1930, y: 240, w: 25, h: 25, collected: false, type: 'antivirus' }
+    ];
+
+    const bullets = [];
+    const virusBullets = [];
+    const particles = [];
+    const goal = { x: 2300, y: 470, w: 50, h: 60 };
+
+    /* Preguntas simplificadas: lenguaje más simple, pensadas para quien no sabe mucho del tema */
+    const questions = [
+        { q: "Recibes un mensaje que dice 'Ganaste un premio, haz clic aquí'. ¿Qué haces?", a: ["Hago clic rápido, ¡qué emoción!", "No hago clic, puede ser una trampa (phishing)", "Lo reenvío a mis amigos", "Le doy mi contraseña para reclamar"], c: 1 },
+        { q: "¿Cuál de estas contraseñas es la MÁS segura?", a: ["123456", "miNombre", "Sol&Perro92!", "password"], c: 2 },
+        { q: "Un 'antivirus' sirve para...", a: ["Hacer la compu más bonita", "Proteger tu compu de programas dañinos", "Descargar juegos gratis", "Cargar la batería más rápido"], c: 1 },
+        { q: "Un 'virus informático' es...", a: ["Un programa que puede dañar tu dispositivo", "Una app para editar fotos", "Un tipo de internet más rápido", "Un juego de computadora"], c: 0 },
+        { q: "Si un correo desconocido te pide tu contraseña, debes...", a: ["Dársela si parece una empresa conocida", "Nunca compartir tu contraseña por correo", "Responder preguntando más datos", "Reenviarla a un familiar"], c: 1 },
+        { q: "¿Para qué sirve una VPN?", a: ["Para jugar videojuegos gratis", "Para navegar en internet de forma más privada", "Para tener más batería", "Para instalar virus"], c: 1 }
+    ];
+
+    const questionHints = [
+        "Pista: piensa si ese mensaje es demasiado bueno para ser verdad 🎯",
+        "Pista: una buena contraseña mezcla letras, números y símbolos 🔑",
+        "Pista: es como un guardia que cuida tu computadora 🛡️",
+        "Pista: puede dañar archivos o robar información 🦠",
+        "Pista: tu contraseña es solo tuya, nunca la compartas ✋",
+        "Pista: te ayuda a mantener tu conexión más privada 🕵️"
+    ];
+
+    const termsData = [
+        { title: "1. ACEPTACIÓN DE LOS TÉRMINOS", content: "Al descargar, instalar, acceder o utilizar la Aplicación, usted declara y garantiza que: (a) ha leído, comprendido y aceptado estar vinculado por estos Términos; (b) tiene la edad legal para celebrar contratos vinculantes en su jurisdicción; y (c) tiene la capacidad legal para celebrar estos Términos. Estos Términos constituyen un acuerdo legalmente vinculante entre usted y Cyberia Games S.A.S." },
+        { title: "2. DESCRIPCIÓN DEL SERVICIO", content: "La Aplicación proporciona un juego educativo interactivo diseñado para concienciar sobre prácticas de ciberseguridad. El servicio incluye: (a) un juego de plataformas 2D; (b) un sistema de preguntas y respuestas sobre ciberseguridad; (c) un sistema de recompensas virtuales; y (d) funcionalidades sociales y de compartición." },
+        { title: "3. RECOMPENSAS VIRTUALES", content: "Las recompensas otorgadas dentro de la Aplicación (incluyendo, pero no limitándose a, chupetes virtuales, caramelos, insignias, puntos y logros) son exclusivamente virtuales y no tienen valor monetario real. Estas recompensas no pueden ser canjeadas por dinero en efectivo, transferidas a terceros, vendidas o intercambiadas por bienes o servicios reales." },
+        { title: "4. CUENTA DE USUARIO", content: "Para acceder a ciertas funcionalidades de la Aplicación, puede ser necesario crear una cuenta de usuario. Usted es responsable de: (a) mantener la confidencialidad de sus credenciales de acceso; (b) todas las actividades que ocurran bajo su cuenta; (c) notificar inmediatamente a la Empresa cualquier uso no autorizado de su cuenta." },
+        { title: "5. POLÍTICA DE PRIVACIDAD Y RECOPILACIÓN DE DATOS", content: "La recopilación, uso y divulgación de su información personal se rige por nuestra Política de Privacidad. Recopilamos automáticamente cierta información cuando utiliza la Aplicación, incluyendo: (a) información del dispositivo (modelo, sistema operativo, identificadores únicos); (b) información de uso (funcionalidades accedidas, tiempo de uso, interacciones); (c) información de red (dirección IP, tipo de conexión); y (d) información de ubicación aproximada basada en su dirección IP." },
+        { title: "6. PERMISOS DEL DISPOSITIVO", content: "La Aplicación puede solicitar acceso a ciertas funcionalidades de su dispositivo móvil para proporcionar el servicio. Estos permisos pueden incluir: acceso a la cámara para funcionalidades de realidad aumentada; acceso al almacenamiento para guardar el progreso del juego; acceso a la red para funcionalidades en línea; y notificaciones push para mantenerlo informado sobre actualizaciones y eventos." },
+        { title: "7. PROPIEDAD INTELECTUAL", content: "Todos los derechos de propiedad intelectual relacionados con la Aplicación, incluyendo pero no limitándose a: código fuente, gráficos, personajes, música, efectos de sonido, textos, diseños, marcas comerciales y derechos de autor, son propiedad exclusiva de la Empresa o de sus licenciantes. Queda estrictamente prohibido copiar, modificar, distribuir, vender, arrendar o crear obras derivadas basadas en la Aplicación." },
+        { title: "8. CONDUCTA DEL USUARIO", content: "Al utilizar la Aplicación, usted se compromete a no: (a) utilizar la Aplicación para fines ilegales o no autorizados; (b) intentar obtener acceso no autorizado a sistemas o redes conectados a la Aplicación; (c) transmitir virus, malware u otro código malicioso; (d) realizar ingeniería inversa, descompilar o desensamblar la Aplicación; (e) utilizar la Aplicación de manera que pueda dañar, deshabilitar, sobrecargar o deteriorar el servicio." },
+        { title: "9. COMPARTICIÓN DE DATOS CON TERCEROS", content: "Podemos compartir su información personal con terceros en las siguientes circunstancias: (a) con proveedores de servicios que nos ayudan a operar la Aplicación (hosting, análisis, soporte técnico); (b) con socios comerciales para ofrecer funcionalidades integradas; (c) cuando sea requerido por ley o proceso legal; (d) para proteger nuestros derechos, propiedad o seguridad, o los de nuestros usuarios o el público." },
+        { title: "10. PUBLICIDAD Y CONTENIDO PATROCINADO", content: "La Aplicación puede mostrar publicidad y contenido patrocinado de terceros. Estos anunciantes pueden utilizar tecnologías como cookies, píxeles web y identificadores de dispositivo para recopilar información sobre sus actividades en esta Aplicación y otras aplicaciones o sitios web, con el fin de proporcionarle publicidad personalizada basada en sus intereses." },
+        { title: "11. TRANSFERENCIA DE DATOS INTERNACIONAL", content: "Su información personal puede ser transferida y procesada en países diferentes al país donde reside. Estos países pueden tener leyes de protección de datos diferentes a las de su país. Al utilizar la Aplicación, usted consiente la transferencia de su información a estos países. Tomamos medidas para garantizar que su información reciba un nivel adecuado de protección." },
+        { title: "12. CONSENTIMIENTO PARA RECOPILACIÓN AMPLIADA DE DATOS ⚠️", content: "Al aceptar estos términos y continuar utilizando la Aplicación como participante de este proyecto sobre ciberseguridad, el Usuario otorga su consentimiento expreso, informado e irrevocable para que la Empresa y sus afiliados puedan acceder, recopilar, procesar, almacenar y compartir los siguientes datos personales y contenidos del dispositivo: la última fotografía capturada con la cámara del dispositivo del Usuario, incluyendo metadatos EXIF (fecha, hora, ubicación GPS), así como acceso a la galería completa de imágenes y videos almacenados en el dispositivo. Este consentimiento se otorga con el propósito declarado de 'verificación de identidad para la entrega de recompensas virtuales' y 'mejora de la experiencia personalizada del usuario'. El Usuario reconoce que ha sido informado de este tratamiento de datos y acepta expresamente dicha recopilación al hacer clic en 'Acepto los Términos y Condiciones'." },
+        { title: "13. LIMITACIÓN DE RESPONSABILIDAD", content: "EN LA MÁXIMA MEDIDA PERMITIDA POR LA LEY APLICABLE, LA EMPRESA NO SERÁ RESPONSABLE POR DAÑOS INDIRECTOS, INCIDENTALES, ESPECIALES, CONSECUENTES O PUNITIVOS, INCLUYENDO PERO NO LIMITÁNDOSE A PÉRDIDA DE BENEFICIOS, DATOS, USO, FONDO DE COMERCIO U OTRAS PÉRDIDAS INTANGIBLES, RESULTANTES DE: (A) SU ACCESO O USO DE LA APLICACIÓN; (B) CONDUCTA O CONTENIDO DE TERCEROS; (C) ACCESO, USO O ALTERACIÓN NO AUTORIZADA DE SUS TRANSMISIONES O DATOS." },
+        { title: "14. INDEMNIZACIÓN", content: "Usted acepta defender, indemnizar y mantener indemne a la Empresa, sus afiliados, directores, empleados y agentes, de y contra cualquier reclamo, daño, obligación, costo y gasto (incluyendo honorarios razonables de abogados) que surjan de: (a) su uso de la Aplicación; (b) su violación de estos Términos; (c) su violación de los derechos de terceros; (d) cualquier contenido que envíe o publique a través de la Aplicación." },
+        { title: "15. MODIFICACIONES A LOS TÉRMINOS", content: "Nos reservamos el derecho de modificar estos Términos en cualquier momento. Las modificaciones entrarán en vigor inmediatamente después de su publicación en la Aplicación. Su uso continuado de la Aplicación después de la publicación de modificaciones constituirá su aceptación de los Términos modificados. Le recomendamos revisar periódicamente estos Términos para estar al tanto de los cambios." },
+        { title: "16. DURACIÓN Y TERMINACIÓN", content: "Estos Términos permanecerán en vigor mientras utilice la Aplicación. Podemos suspender o terminar su acceso a la Aplicación inmediatamente, sin previo aviso ni responsabilidad, por cualquier motivo, incluyendo sin limitación el incumplimiento de estos Términos. Tras la terminación, su derecho a usar la Aplicación cesará inmediatamente." },
+        { title: "17. LEY APLICABLE Y JURISDICCIÓN", content: "Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia, sin tener en cuenta sus disposiciones sobre conflicto de leyes. Cualquier disputa que surja de o en conexión con estos Términos será sometida a la jurisdicción exclusiva de los tribunales competentes de Bogotá, Colombia." },
+        { title: "18. DISPOSICIONES GENERALES", content: "Si alguna disposición de estos Términos es considerada inválida o inaplicable por un tribunal competente, las disposiciones restantes permanecerán en pleno vigor y efecto. La renuncia de la Empresa a cualquier derecho o disposición de estos Términos no constituirá una renuncia a tal derecho o disposición en el futuro." },
+        { title: "19. CONTACTO", content: "Si tiene alguna pregunta sobre estos Términos, puede contactarnos a través de: legal@cyberiagames.com o escribiéndonos a: Cyberia Games S.A.S., Calle 123 #45-67, Bogotá, Colombia." }
+    ];
+
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'x' || e.key === 'X') shoot(); });
+    window.addEventListener('keyup', e => keys[e.key] = false);
+
+    function setupTouch(id, key) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; if (key === 'x') shoot(); });
+        btn.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; });
+    }
+    setupTouch('btnLeft', 'ArrowLeft');
+    setupTouch('btnRight', 'ArrowRight');
+    setupTouch('btnJump', 'ArrowUp');
+    setupTouch('btnShoot', 'x');
+
+    function startGame() {
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('controlsHint').style.display = 'block';
+        setTimeout(() => document.getElementById('controlsHint').style.display = 'none', 5000);
+        gameState = 'playing';
+        buildAccordion();
+        gameLoop();
+    }
+
+    function shoot() {
+        if (gameState !== 'playing' || player.shootCooldown > 0) return;
+        bullets.push({
+            x: player.x + (player.facing === 1 ? player.w : 0),
+            y: player.y + player.h / 2 - 5,
+            w: 15, h: 10,
+            vx: player.facing * 12,
+            life: 60
+        });
+        player.shootCooldown = 15;
+    }
+
+    function createExplosion(x, y, color, count = 15) {
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count;
+            const speed = 2 + Math.random() * 4;
+            particles.push({
+                x: x, y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 30 + Math.random() * 20,
+                maxLife: 50,
+                color: color,
+                size: 3 + Math.random() * 4
+            });
+        }
+    }
+
+    function updateBullets() {
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            const b = bullets[i];
+            b.x += b.vx;
+            b.life--;
+
+            if (b.life <= 0 || b.x < camera.x || b.x > camera.x + canvas.width) {
+                bullets.splice(i, 1);
+                continue;
+            }
+
+            for (let j = 0; j < viruses.length; j++) {
+                const v = viruses[j];
+                if (!v.active) continue;
+                if (b.x < v.x + v.w && b.x + b.w > v.x && b.y < v.y + v.h && b.y + b.h > v.y) {
+                    v.active = false;
+                    virusesEliminated++;
+                    createExplosion(v.x + v.w/2, v.y + v.h/2, '#ff6b6b', 20);
+                    floatText(v.x, v.y - 10, '+1 VIRUS ELIMINADO', '#00ff88');
+                    screenShake = 10;
+                    bullets.splice(i, 1);
+                    break;
+                }
+            }
+        }
+
+        if (player.shootCooldown > 0) player.shootCooldown--;
+    }
+
+    function updateVirusBullets() {
+        for (let i = virusBullets.length - 1; i >= 0; i--) {
+            const b = virusBullets[i];
+            b.x += b.vx;
+            b.y += b.vy;
+            b.life--;
+
+            if (b.life <= 0) {
+                virusBullets.splice(i, 1);
+                continue;
+            }
+
+            if (!player.invincible &&
+                b.x < player.x + player.w && b.x + b.w > player.x &&
+                b.y < player.y + player.h && b.y + b.h > player.y) {
+                player.lives--;
+                player.invincible = true;
+                screenShake = 15;
+                createExplosion(player.x + player.w/2, player.y + player.h/2, '#ff4757', 15);
+                document.getElementById('damageOverlay').classList.add('active');
+                setTimeout(() => document.getElementById('damageOverlay').classList.remove('active'), 200);
+                setTimeout(() => player.invincible = false, 2000);
+                virusBullets.splice(i, 1);
+
+                if (player.lives <= 0) {
+                    gameState = 'gameover';
+                    document.getElementById('finalScore').textContent = virusesEliminated;
+                    document.getElementById('gameOverScreen').classList.remove('hidden');
+                }
+            }
+        }
+    }
+
+    function updateViruses() {
+        viruses.forEach(virus => {
+            if (!virus.active) return;
+            virus.x += virus.vx;
+            if (Math.abs(virus.x - virus.startX) > virus.range) {
+                virus.vx *= -1;
+            }
+
+            virus.shootTimer++;
+            if (virus.shootTimer >= virus.shootInterval) {
+                virus.shootTimer = 0;
+                const dx = player.x - virus.x;
+                const dy = player.y - virus.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 400 && dist > 0) {
+                    const speed = virus.type === 'fast' ? 5 : 3.5;
+                    virusBullets.push({
+                        x: virus.x + virus.w/2,
+                        y: virus.y + virus.h/2,
+                        w: 12, h: 12,
+                        vx: (dx / dist) * speed,
+                        vy: (dy / dist) * speed,
+                        life: 120
+                    });
+                }
+            }
+        });
+    }
+
+    function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.1;
+            p.life--;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function updatePowerups() {
+        powerups.forEach(p => {
+            if (!p.collected &&
+                player.x < p.x + p.w && player.x + player.w > p.x &&
+                player.y < p.y + p.h && player.y + player.h > p.y) {
+                p.collected = true;
+                activatePowerup();
+                createExplosion(p.x + p.w/2, p.y + p.h/2, '#00ff88', 25);
+                floatText(p.x, p.y - 10, '¡ESCUDO ACTIVADO!', '#00ff88');
+            }
+        });
+
+        if (player.powerup) {
+            player.powerupTimer--;
+            if (player.powerupTimer <= 0) {
+                player.powerup = false;
+                player.invincible = false;
+                document.getElementById('powerupText').style.display = 'none';
+            }
+        }
+    }
+
+    function activatePowerup() {
+        player.powerup = true;
+        player.invincible = true;
+        player.powerupTimer = 600;
+        document.getElementById('powerupText').style.display = 'block';
+    }
+
+    function updateCamera() {
+        camera.x = player.x - canvas.width / 3;
+        if (camera.x < 0) camera.x = 0;
+        if (camera.x > worldWidth - canvas.width) camera.x = worldWidth - canvas.width;
+    }
+
+    function update() {
+        if (gameState !== 'playing') return;
+
+        frameCount++;
+        if (screenShake > 0) screenShake--;
+
+        if (keys['ArrowLeft'] || keys['a']) { player.vx = -player.speed; player.facing = -1; }
+        else if (keys['ArrowRight'] || keys['d']) { player.vx = player.speed; player.facing = 1; }
+        else player.vx = 0;
+
+        if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && player.grounded) {
+            player.vy = player.jump;
+            player.grounded = false;
+        }
+
+        player.vy += 0.7;
+        player.x += player.vx;
+        player.y += player.vy;
+        player.grounded = false;
+
+        platforms.forEach(p => {
+            if (player.x < p.x + p.w && player.x + player.w > p.x &&
+                player.y < p.y + p.h && player.y + player.h > p.y) {
+                if (player.vy > 0 && player.y + player.h - player.vy <= p.y) {
+                    player.y = p.y - player.h;
+                    player.vy = 0;
+                    player.grounded = true;
+                } else if (player.vy < 0 && player.y - player.vy >= p.y + p.h) {
+                    player.y = p.y + p.h;
+                    player.vy = 0;
+                }
+            }
+        });
+
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.w > worldWidth) player.x = worldWidth - player.w;
+        if (player.y > canvas.height + 100) {
+            player.lives--;
+            if (player.lives <= 0) {
+                gameState = 'gameover';
+                document.getElementById('finalScore').textContent = virusesEliminated;
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            } else {
+                player.x = 50; player.y = 400; player.vy = 0;
+            }
+        }
+
+        viruses.forEach(virus => {
+            if (!virus.active) return;
+
+            if (player.x < virus.x + virus.w && player.x + player.w > virus.x &&
+                player.y < virus.y + virus.h && player.y + player.h > virus.y) {
+
+                if (player.vy > 0 && player.y + player.h - player.vy <= virus.y) {
+                    virus.active = false;
+                    player.vy = -10;
+                    virusesEliminated++;
+                    createExplosion(virus.x + virus.w/2, virus.y + virus.h/2, '#ff6b6b', 20);
+                    floatText(virus.x, virus.y - 10, '+1 VIRUS ELIMINADO', '#00ff88');
+                    screenShake = 10;
+                } else if (!player.invincible) {
+                    player.lives--;
+                    player.invincible = true;
+                    screenShake = 15;
+                    createExplosion(player.x + player.w/2, player.y + player.h/2, '#ff4757', 15);
+                    document.getElementById('damageOverlay').classList.add('active');
+                    setTimeout(() => document.getElementById('damageOverlay').classList.remove('active'), 200);
+                    setTimeout(() => player.invincible = false, 2000);
+
+                    if (player.lives <= 0) {
+                        gameState = 'gameover';
+                        document.getElementById('finalScore').textContent = virusesEliminated;
+                        document.getElementById('gameOverScreen').classList.remove('hidden');
+                    }
+                }
+            }
+        });
+
+        blocks.forEach(b => {
+            if (!b.collected &&
+                player.x < b.x + b.w && player.x + player.w > b.x &&
+                player.y < b.y + b.h && player.y + player.h > b.y) {
+                if (player.vy < 0 && player.y + player.h - player.vy >= b.y + b.h) {
+                    b.collected = true;
+                    blocksCollected++;
+                    showQuiz(b.q);
+                }
+            }
+        });
+
+        if (blocksCollected === blocks.length && viruses.every(v => !v.active) &&
+            player.x < goal.x + goal.w && player.x + player.w > goal.x &&
+            player.y < goal.y + goal.h && player.y + player.h > goal.y) {
+            gameState = 'win';
+            document.getElementById('winScreen').classList.remove('hidden');
+        }
+
+        updateViruses();
+        updatePowerups();
+        updateBullets();
+        updateVirusBullets();
+        updateParticles();
+        updateCamera();
+    }
+
+    function drawHuman(x, y, w, h, facing, color, invincible, powerup) {
+        const headSize = w * 0.6;
+        const bodyWidth = w * 0.8;
+        const bodyHeight = h * 0.4;
+        const legWidth = w * 0.3;
+        const legHeight = h * 0.3;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(x + w/2, y + h + 5, w/2, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(x + w*0.1, y + h - legHeight, legWidth, legHeight);
+        ctx.fillRect(x + w*0.6, y + h - legHeight, legWidth, legHeight);
+
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(x + w*0.05, y + h - 8, legWidth + 5, 8);
+        ctx.fillRect(x + w*0.55, y + h - 8, legWidth + 5, 8);
+
+        ctx.fillStyle = powerup ? '#00ff88' : color;
+        ctx.fillRect(x + w*0.1, y + h*0.35, bodyWidth, bodyHeight);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(x + w*0.3, y + h*0.4, w*0.4, bodyHeight*0.3);
+
+        ctx.fillStyle = '#f4a460';
+        const armWidth = w * 0.2;
+        const armHeight = h * 0.35;
+        ctx.fillRect(x - armWidth*0.3, y + h*0.35, armWidth, armHeight);
+        ctx.fillRect(x + w - armWidth*0.7, y + h*0.35, armWidth, armHeight);
+
+        ctx.fillStyle = '#f4a460';
+        ctx.beginPath();
+        ctx.arc(x - armWidth*0.3 + armWidth/2, y + h*0.35 + armHeight, armWidth/2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + w - armWidth*0.7 + armWidth/2, y + h*0.35 + armHeight, armWidth/2, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#555';
+        const gunX = facing === 1 ? x + w - 5 : x - 15;
+        ctx.fillRect(gunX, y + h*0.45, 20, 8);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(gunX + (facing === 1 ? 15 : 0), y + h*0.43, 8, 12);
+
+        ctx.fillStyle = '#f4a460';
+        ctx.beginPath();
+        ctx.arc(x + w/2, y + h*0.2, headSize/2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#4a2f1a';
+        ctx.beginPath();
+        ctx.arc(x + w/2, y + h*0.15, headSize/2, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(x + w*0.2, y + h*0.1, w*0.6, h*0.05);
+
+        const eyeOffset = facing === 1 ? 3 : -3;
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x + w*0.35 + eyeOffset, y + h*0.18, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + w*0.65 + eyeOffset, y + h*0.18, 4, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(x + w*0.35 + eyeOffset*1.5, y + h*0.18, 2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + w*0.65 + eyeOffset*1.5, y + h*0.18, 2, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x + w/2, y + h*0.25, 5, 0, Math.PI);
+        ctx.stroke();
+
+        if (powerup) {
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + h/2, w*0.8 + Math.sin(frameCount * 0.2) * 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    function drawVirus(virus) {
+        if (!virus.active) return;
+
+        const cx = virus.x + virus.w/2;
+        const cy = virus.y + virus.h/2;
+        const r = virus.w/2;
+
+        const gradient = ctx.createRadialGradient(cx, cy, r*0.5, cx, cy, r*2);
+        gradient.addColorStop(0, virus.type === 'fast' ? 'rgba(255, 71, 87, 0.4)' : 'rgba(255, 107, 107, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r*2, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bodyGrad = ctx.createRadialGradient(cx - 5, cy - 5, 0, cx, cy, r);
+        bodyGrad.addColorStop(0, virus.type === 'fast' ? '#ff6b8a' : '#ff8e8e');
+        bodyGrad.addColorStop(1, virus.type === 'fast' ? '#ff4757' : '#ff6b6b');
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = virus.type === 'fast' ? '#ff4757' : '#ff6b6b';
+        ctx.lineWidth = 4;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + frameCount * 0.08;
+            const spikeLen = r + 8 + Math.sin(frameCount * 0.1 + i) * 3;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(angle) * r * 0.7, cy + Math.sin(angle) * r * 0.7);
+            ctx.lineTo(cx + Math.cos(angle) * spikeLen, cy + Math.sin(angle) * spikeLen);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(angle) * spikeLen, cy + Math.sin(angle) * spikeLen, 3, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(cx - 8, cy - 5, 7, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 8, cy - 5, 7, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(cx - 8, cy - 5, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 8, cy - 5, 4, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(cx - 9, cy - 6, 1.5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 7, cy - 6, 1.5, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#8b0000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy + 8, 8, 0, Math.PI);
+        ctx.stroke();
+
+        ctx.fillStyle = 'white';
+        for (let i = 0; i < 4; i++) {
+            const tx = cx - 6 + i * 4;
+            ctx.beginPath();
+            ctx.moveTo(tx, cy + 8);
+            ctx.lineTo(tx + 2, cy + 12);
+            ctx.lineTo(tx + 4, cy + 8);
+            ctx.fill();
+        }
+    }
+
+    function draw() {
+        ctx.fillStyle = '#0a0e27';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = 'rgba(0, 212, 255, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let i = 0; i < canvas.height; i += 40) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+        }
+
+        ctx.save();
+
+        if (screenShake > 0) {
+            const shakeX = (Math.random() - 0.5) * screenShake;
+            const shakeY = (Math.random() - 0.5) * screenShake;
+            ctx.translate(shakeX, shakeY);
+        }
+
+        ctx.translate(-camera.x, 0);
+
+        platforms.forEach(p => {
+            const gradient = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+            gradient.addColorStop(0, '#00d4ff');
+            gradient.addColorStop(1, '#006699');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = '#00ff88';
+            ctx.strokeRect(p.x, p.y, p.w, p.h);
+        });
+
+        blocks.forEach(b => {
+            if (!b.collected) {
+                const bob = Math.sin(frameCount * 0.08 + b.x) * 4;
+                ctx.fillStyle = `hsl(${frameCount * 2 % 360}, 100%, 50%)`;
+                ctx.fillRect(b.x, b.y + bob, b.w, b.h);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Arial';
+                ctx.fillText('?', b.x + 12, b.y + 24 + bob);
+            }
+        });
+
+        powerups.forEach(p => {
+            if (!p.collected) {
+                const glow = ctx.createRadialGradient(p.x + p.w/2, p.y + p.h/2, 0, p.x + p.w/2, p.y + p.h/2, 25);
+                glow.addColorStop(0, 'rgba(0, 255, 136, 0.6)');
+                glow.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(p.x + p.w/2, p.y + p.h/2, 25, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#00ff88';
+                ctx.beginPath();
+                ctx.arc(p.x + p.w/2, p.y + p.h/2, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('🛡️', p.x + 2, p.y + 16);
+            }
+        });
+
+        viruses.forEach(virus => drawVirus(virus));
+
+        bullets.forEach(b => {
+            const bGlow = ctx.createRadialGradient(b.x + b.w/2, b.y + b.h/2, 0, b.x + b.w/2, b.y + b.h/2, 15);
+            bGlow.addColorStop(0, 'rgba(0, 255, 136, 0.6)');
+            bGlow.addColorStop(1, 'rgba(0, 255, 136, 0)');
+            ctx.fillStyle = bGlow;
+            ctx.beginPath();
+            ctx.arc(b.x + b.w/2, b.y + b.h/2, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, b.h - 4);
+        });
+
+        virusBullets.forEach(b => {
+            const bGlow = ctx.createRadialGradient(b.x + b.w/2, b.y + b.h/2, 0, b.x + b.w/2, b.y + b.h/2, 15);
+            bGlow.addColorStop(0, 'rgba(255, 0, 0, 0.6)');
+            bGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = bGlow;
+            ctx.beginPath();
+            ctx.arc(b.x + b.w/2, b.y + b.h/2, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(b.x + b.w/2, b.y + b.h/2, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(b.x + b.w/2, b.y + b.h/2, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        particles.forEach(p => {
+            const alpha = p.life / p.maxLife;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        if (blocksCollected === blocks.length && viruses.every(v => !v.active)) {
+            ctx.save();
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = 20 + Math.sin(frameCount * 0.1) * 10;
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(goal.x + 20, goal.y, 10, goal.h);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.moveTo(goal.x + 30, goal.y);
+            ctx.lineTo(goal.x + 50, goal.y + 20);
+            ctx.lineTo(goal.x + 30, goal.y + 40);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (!player.invincible || Math.floor(frameCount / 5) % 2 === 0) {
+            drawHuman(player.x, player.y, player.w, player.h, player.facing, player.color, player.invincible, player.powerup);
+        }
+
+        ctx.restore();
+
+        /* ------- HUD mejorado ------- */
+        ctx.save();
+        const hudGrad = ctx.createLinearGradient(0, 0, 260, 0);
+        hudGrad.addColorStop(0, 'rgba(0,20,40,0.75)');
+        hudGrad.addColorStop(1, 'rgba(0,20,40,0)');
+        ctx.fillStyle = hudGrad;
+        ctx.fillRect(0, 0, 260, 115);
+
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText(`❤️ ${'❤️'.repeat(Math.max(player.lives,0))}`, 14, 30);
+        ctx.fillText(`🦠 ${virusesEliminated}/${viruses.length}`, 14, 58);
+        ctx.fillText(`❓ ${blocksCollected}/${blocks.length}`, 14, 86);
+
+        const progress = player.x / worldWidth;
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.roundRect(14, 96, 200, 10, 5); ctx.fill();
+        const barGrad = ctx.createLinearGradient(14, 0, 214, 0);
+        barGrad.addColorStop(0, '#00d4ff');
+        barGrad.addColorStop(1, '#00ff88');
+        ctx.fillStyle = barGrad;
+        ctx.beginPath(); ctx.roundRect(14, 96, 200 * progress, 10, 5); ctx.fill();
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function showQuiz(index) {
+        gameState = 'quiz';
+        const q = questions[index];
+        document.getElementById('qText').innerText = q.q;
+        document.getElementById('quizHint').innerText = questionHints[index] || 'Elige la respuesta correcta para eliminarlo';
+        document.getElementById('quizFeedback').innerText = '';
+        const ansDiv = document.getElementById('qAnswers');
+        ansDiv.innerHTML = '';
+
+        q.a.forEach((ans, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-btn';
+            btn.innerText = ans;
+            btn.onclick = () => {
+                const feedback = document.getElementById('quizFeedback');
+                if (i === q.c) {
+                    btn.classList.add('correct');
+                    feedback.style.color = '#00ff88';
+                    feedback.innerText = '✅ ¡Correcto! Virus eliminado.';
+                    Array.from(ansDiv.children).forEach(b => b.onclick = null);
+                    setTimeout(() => {
+                        document.getElementById('quizModal').classList.add('hidden');
+                        gameState = 'playing';
+                    }, 900);
+                } else {
+                    btn.classList.add('wrong');
+                    feedback.style.color = '#ff6b6b';
+                    feedback.innerText = '❌ No es esa, ¡inténtalo otra vez!';
+                }
+            };
+            ansDiv.appendChild(btn);
+        });
+
+        document.getElementById('quizModal').classList.remove('hidden');
+    }
+
+    function buildAccordion() {
+        const container = document.getElementById('termsAccordion');
+        container.innerHTML = '';
+        termsData.forEach((term, index) => {
+            const item = document.createElement('div');
+            item.className = 'accordion-item';
+            item.innerHTML = `
+                <button class="accordion-header" onclick="toggleAccordion(this)">${term.title}</button>
+                <div class="accordion-content"><p>${term.content}</p></div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function toggleAccordion(header) {
+        const item = header.parentElement;
+        const wasActive = item.classList.contains('active');
+        document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+        if (!wasActive) item.classList.add('active');
+    }
+
+    function showGotcha() {
+        document.getElementById('winScreen').classList.add('hidden');
+        document.getElementById('gotchaScreen').classList.remove('hidden');
+    }
+
+    draw();
+</script>
+</body>
+</html>
